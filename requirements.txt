@@ -1,1 +1,6 @@
+# Core dependencies for MCP server
+asyncio-stdlib
+pathlib2>=2.3.0
 
+# Optional: For enhanced file type detection
+python-magic>=0.4.24
