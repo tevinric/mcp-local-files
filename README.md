@@ -1,288 +1,455 @@
-# MCP Local Files Server Setup Guide
+# MCP Local Files Server - Complete Setup Guide
 
-This guide will help you set up a Python MCP (Model Context Protocol) server that provides GitHub Copilot with context from your local files through VSCode.
+This guide provides **step-by-step instructions** to set up a Python MCP (Model Context Protocol) server that gives GitHub Copilot context from your local files through VSCode.
 
-## Files Structure
+## 📋 What You'll Need
+
+- Python 3.8 or higher
+- VSCode with GitHub Copilot extension
+- A project directory you want to provide context from
+
+## 📁 File Structure
+
+After setup, you'll have these files:
 
 ```
-mcp-local-files/
-├── mcp_server.py          # Main server implementation
-├── requirements.txt       # Python dependencies
-├── config/
-│   ├── mcp_settings.json  # MCP configuration
-│   └── vscode_settings.json # VSCode settings
-└── README.md             # This file
+mcp-local-files/           # ← Create this directory
+├── mcp_server.py          # ← Main server (save artifact 1 here)
+├── launcher.py            # ← Setup script (save artifact 3 here)
+└── README.md             # ← This guide (save artifact 2 here)
 ```
 
-## Requirements File (requirements.txt)
+## 🚀 Step-by-Step Installation
 
-```txt
-# Core dependencies for MCP server
-asyncio-stdlib
-pathlib2>=2.3.0
+### **STEP 1: Download and Setup Files**
 
-# Optional: For enhanced file type detection
-python-magic>=0.4.24
-```
+1. **Create the MCP directory:**
+   ```bash
+   # Choose a location for the MCP server files
+   mkdir ~/mcp-local-files
+   cd ~/mcp-local-files
+   ```
 
-## Installation Steps
+2. **Save the server files:**
+   - Copy the `mcp_server.py` code from **Artifact 1** → Save as `mcp_server.py`
+   - Copy the `launcher.py` code from **Artifact 3** → Save as `launcher.py`
+   - Copy this README from **Artifact 2** → Save as `README.md`
 
-### 1. Python Environment Setup
+3. **Make scripts executable (macOS/Linux only):**
+   ```bash
+   chmod +x mcp_server.py
+   chmod +x launcher.py
+   ```
+
+### **STEP 2: Verify Python Installation**
+
+1. **Check Python version:**
+   ```bash
+   python --version
+   # OR
+   python3 --version
+   ```
+   ✅ **Required:** Python 3.8 or higher
+
+2. **If Python is not installed:**
+   - **Windows:** Download from [python.org](https://python.org)
+   - **macOS:** `brew install python3` or download from python.org
+   - **Linux:** `sudo apt install python3` (Ubuntu/Debian) or `sudo yum install python3` (RHEL/CentOS)
+
+### **STEP 3: Setup Your Project**
+
+1. **Navigate to your project directory:**
+   ```bash
+   # Example: Replace with your actual project path
+   cd ~/my-awesome-project
+   ```
+
+2. **Run the automated setup:**
+   ```bash
+   # Point to where you saved the MCP files
+   python ~/mcp-local-files/launcher.py setup --project .
+   ```
+
+   This will automatically:
+   - Create VSCode configuration files
+   - Set up MCP server configuration
+   - Install any needed dependencies
+
+### **STEP 4: VSCode Configuration (Manual Method)**
+
+**If the automated setup doesn't work, follow these manual steps:**
+
+#### **A. Install GitHub Copilot Extension**
+
+1. Open VSCode
+2. Go to Extensions tab (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "GitHub Copilot"
+4. Install the official GitHub Copilot extension
+5. Sign in to your GitHub account when prompted
+
+#### **B. Configure VSCode Settings**
+
+1. **Open VSCode User Settings:**
+   - Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
+   - Type "Preferences: Open User Settings (JSON)"
+   - Click on it
+
+2. **Add this configuration to your settings.json:**
+   ```json
+   {
+     "github.copilot.enable": {
+       "*": true,
+       "yaml": true,
+       "plaintext": true,
+       "markdown": true
+     },
+     "mcp.servers": {
+       "local-files": {
+         "command": "python",
+         "args": [
+           "/Users/YOUR_USERNAME/mcp-local-files/mcp_server.py",
+           "--root",
+           "${workspaceFolder}"
+         ],
+         "cwd": "${workspaceFolder}"
+       }
+     }
+   }
+   ```
+
+   **⚠️ IMPORTANT:** Replace `/Users/YOUR_USERNAME/mcp-local-files/mcp_server.py` with the **absolute path** to where you saved `mcp_server.py`
+
+   **Finding the absolute path:**
+   ```bash
+   # In the mcp-local-files directory, run:
+   pwd
+   # Copy the output and add /mcp_server.py to the end
+   ```
+
+#### **C. Project-Specific Settings (Recommended)**
+
+1. **In your project directory, create `.vscode` folder:**
+   ```bash
+   # From your project root
+   mkdir .vscode
+   ```
+
+2. **Create `.vscode/settings.json` file:**
+   ```bash
+   # Create the file
+   touch .vscode/settings.json
+   ```
+
+3. **Add this content to `.vscode/settings.json`:**
+   ```json
+   {
+     "github.copilot.enable": {
+       "*": true,
+       "yaml": true,
+       "plaintext": true,
+       "markdown": true
+     },
+     "mcp.servers": {
+       "local-files": {
+         "command": "python",
+         "args": [
+           "/ABSOLUTE/PATH/TO/mcp_server.py",
+           "--root",
+           "${workspaceFolder}"
+         ],
+         "cwd": "${workspaceFolder}"
+       }
+     }
+   }
+   ```
+
+   **Again, replace `/ABSOLUTE/PATH/TO/mcp_server.py` with your actual path.**
+
+### **STEP 5: Start the MCP Server**
+
+#### **Option A: Using the Launcher (Recommended)**
 
 ```bash
-# Create a virtual environment
-python -m venv mcp-env
-
-# Activate the virtual environment
-# On Windows:
-mcp-env\Scripts\activate
-# On macOS/Linux:
-source mcp-env/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+# From your project directory
+python ~/mcp-local-files/launcher.py start --project .
 ```
 
-### 2. MCP Configuration
-
-Create `~/.config/mcp/settings.json` (or `%APPDATA%\mcp\settings.json` on Windows):
-
-```json
-{
-  "mcpServers": {
-    "local-files": {
-      "command": "python",
-      "args": [
-        "/path/to/your/mcp_server.py",
-        "--root",
-        "/path/to/your/project/directory"
-      ],
-      "env": {
-        "PYTHONPATH": "/path/to/your/mcp-env/lib/python3.x/site-packages"
-      }
-    }
-  }
-}
-```
-
-### 3. VSCode Configuration
-
-Add to your VSCode `settings.json`:
-
-```json
-{
-  "github.copilot.enable": {
-    "*": true,
-    "yaml": true,
-    "plaintext": true,
-    "markdown": true
-  },
-  "github.copilot.advanced": {
-    "length": 500,
-    "temperature": 0.1
-  },
-  "mcp.servers": {
-    "local-files": {
-      "command": "python",
-      "args": [
-        "/absolute/path/to/mcp_server.py",
-        "--root",
-        "${workspaceFolder}"
-      ],
-      "cwd": "${workspaceFolder}"
-    }
-  }
-}
-```
-
-### 4. GitHub Copilot Configuration
-
-Create `.vscode/settings.json` in your project root:
-
-```json
-{
-  "github.copilot.advanced": {
-    "debug.overrideEngine": "codex",
-    "debug.testOverrideProxyUrl": "http://localhost:8080",
-    "debug.overrideProxyUrl": "http://localhost:8080"
-  },
-  "github.copilot.enable": {
-    "*": true
-  }
-}
-```
-
-## Usage Instructions
-
-### 1. Start the MCP Server
+#### **Option B: Manual Start**
 
 ```bash
-# Navigate to your project directory
-cd /path/to/your/project
-
-# Activate virtual environment
-source mcp-env/bin/activate  # or mcp-env\Scripts\activate on Windows
+# Navigate to your project
+cd ~/my-awesome-project
 
 # Start the server
-python mcp_server.py --root . --max-file-size 2097152
+python ~/mcp-local-files/mcp_server.py --root . --max-file-size 2097152
 ```
 
-### 2. VSCode Integration
-
-1. Install the GitHub Copilot extension in VSCode
-2. Install any MCP extension for VSCode (if available) or configure manually
-3. Open your project in VSCode
-4. The MCP server should automatically connect and provide file context
-
-### 3. Testing the Setup
-
-Create a test file to verify the setup works:
-
-```python
-# test_context.py
-def example_function():
-    """
-    This function demonstrates that Copilot can see
-    context from other files in the project
-    """
-    # Start typing here and Copilot should suggest
-    # completions based on other files in your project
-    pass
+**You should see output like:**
+```
+2024-06-27 10:30:00 - __main__ - INFO - Starting MCP server for directory: /Users/username/my-awesome-project
 ```
 
-## Configuration Options
+### **STEP 6: Test the Setup**
 
-### Server Arguments
+1. **Keep the MCP server running** (don't close the terminal)
 
-- `--root`: Root directory to serve files from (default: current directory)
-- `--max-file-size`: Maximum file size to read in bytes (default: 1MB)
-
-### Ignored Files/Patterns
-
-The server automatically ignores:
-- Binary files (images, executables, archives)
-- Large files (configurable)
-- Common non-source directories (node_modules, .git, __pycache__)
-- Log files and temporary files
-
-### Supported File Types
-
-The server serves context from:
-- Source code files (.py, .js, .ts, .jsx, .tsx, .java, .cpp, etc.)
-- Configuration files (.json, .yaml, .toml, .ini)
-- Documentation (.md, .txt, .rst)
-- Web files (.html, .css, .scss)
-- Scripts (.sh, .bat, .ps1)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Server won't start**
-   - Check Python path and virtual environment
-   - Verify all dependencies are installed
-   - Check file permissions
-
-2. **VSCode can't connect to MCP server**
-   - Verify the paths in settings.json are absolute
-   - Check that the server is running
-   - Look at VSCode Developer Console for errors
-
-3. **No context in Copilot suggestions**
-   - Ensure the MCP server is providing resources
-   - Check the server logs in `mcp_server.log`
-   - Verify file types are supported
-
-### Debugging
-
-1. **Check server logs**
+2. **Open VSCode in your project:**
    ```bash
+   # From your project directory
+   code .
+   ```
+
+3. **Create a test file:**
+   - Create a new file called `test_copilot.py`
+   - Add this code:
+   ```python
+   # test_copilot.py
+   def analyze_project_files():
+       """
+       This function should get suggestions based on other files in the project.
+       Start typing below and see if Copilot suggests code based on your local files.
+       """
+       # Start typing here...
+   ```
+
+4. **Test Copilot suggestions:**
+   - Start typing in the function
+   - Copilot should suggest completions based on your other project files
+   - Look for suggestions that reference your existing functions, classes, or variables
+
+## ✅ Verification Steps
+
+### **Verify MCP Server is Working**
+
+1. **Check server logs:**
+   ```bash
+   # The server creates a log file in your project directory
    tail -f mcp_server.log
    ```
 
-2. **Test server manually**
-   ```bash
-   echo '{"method": "resources/list", "id": 1}' | python mcp_server.py
+   **Look for these messages:**
+   ```
+   INFO - Starting MCP server for directory: /your/project/path
+   INFO - Scanned X files successfully
    ```
 
-3. **VSCode Developer Console**
-   - Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
+2. **Test server manually:**
+   ```bash
+   # In a new terminal, test the server response
+   echo '{"method": "resources/list", "id": 1, "params": {}}' | python ~/mcp-local-files/mcp_server.py --root .
+   ```
+
+   **Expected output:** JSON response with your project files listed
+
+### **Verify VSCode Integration**
+
+1. **Check VSCode settings:**
+   - Press `Ctrl+Shift+P` / `Cmd+Shift+P`
+   - Type "Preferences: Open Settings (JSON)"
+   - Verify your MCP configuration is there
+
+2. **Check Developer Console:**
+   - Press `Ctrl+Shift+P` / `Cmd+Shift+P`
    - Type "Developer: Toggle Developer Tools"
-   - Check Console and Network tabs for errors
+   - Check Console tab for MCP-related messages
 
-## Security Considerations
+3. **Test Copilot:**
+   - Open an existing file in your project
+   - Start typing a function that should reference other files
+   - Copilot suggestions should include context from your local files
 
-- The server only reads files, never writes
-- Files are filtered by type and size
-- Sensitive patterns are automatically ignored
-- Consider running in a restricted directory
-- Be cautious with private repositories
+## 🔧 Common Issues & Solutions
 
-## Performance Tips
+### **Issue 1: "python command not found"**
 
-1. **Optimize file scanning**
-   - Use specific root directories rather than entire filesystem
-   - Adjust max-file-size based on your needs
-   - Add custom ignore patterns for large file types
+**Solution:**
+```bash
+# Try python3 instead
+python3 ~/mcp-local-files/mcp_server.py --root .
 
-2. **VSCode Performance**
-   - Limit the workspace to relevant directories
-   - Close unused files and directories
-   - Consider excluding large folders in VSCode settings
+# Or find your Python path
+which python
+which python3
 
-## Advanced Configuration
+# Use the full path in VSCode settings
+```
 
-### Custom File Filters
+### **Issue 2: "Permission denied" error**
 
-Edit the `ignored_patterns` and `allowed_extensions` in `mcp_server.py`:
+**Solution:**
+```bash
+# Make sure files are executable
+chmod +x ~/mcp-local-files/mcp_server.py
+chmod +x ~/mcp-local-files/launcher.py
 
+# Check file ownership
+ls -la ~/mcp-local-files/
+```
+
+### **Issue 3: VSCode can't find MCP server**
+
+**Solution:**
+1. **Verify absolute paths in settings.json**
+2. **Check the path exists:**
+   ```bash
+   ls -la /your/absolute/path/to/mcp_server.py
+   ```
+3. **Test the command manually:**
+   ```bash
+   # Copy the exact command from your VSCode settings and test it
+   python /your/absolute/path/to/mcp_server.py --root . --max-file-size 1048576
+   ```
+
+### **Issue 4: No context in Copilot suggestions**
+
+**Solutions:**
+1. **Verify the server is reading files:**
+   ```bash
+   # Check the logs for file scanning messages
+   grep "Scanned" mcp_server.log
+   ```
+
+2. **Check file types are supported:**
+   - The server only reads text files (.py, .js, .ts, .md, etc.)
+   - Binary files and large files are ignored
+
+3. **Restart VSCode:**
+   - Close VSCode completely
+   - Restart the MCP server
+   - Reopen VSCode
+
+### **Issue 5: Server crashes or stops**
+
+**Solution:**
+```bash
+# Check the detailed error logs
+cat mcp_server.log
+
+# Common fixes:
+# 1. Reduce max file size
+python ~/mcp-local-files/mcp_server.py --root . --max-file-size 524288
+
+# 2. Exclude problematic directories
+# Edit mcp_server.py and add to ignored_patterns:
+# 'large_folder/*', 'problematic_dir'
+```
+
+## 📂 File Locations Reference
+
+### **MCP Server Files**
+```
+~/mcp-local-files/
+├── mcp_server.py     # The main server
+├── launcher.py       # Setup and start script
+└── README.md         # This guide
+```
+
+### **VSCode Configuration Files**
+```
+# Global VSCode settings
+~/.config/Code/User/settings.json          # Linux
+~/Library/Application Support/Code/User/settings.json  # macOS
+%APPDATA%\Code\User\settings.json          # Windows
+
+# Project-specific settings
+your-project/.vscode/settings.json         # Project settings (recommended)
+```
+
+### **MCP Configuration Files**
+```
+# Global MCP settings (created by launcher.py)
+~/.config/mcp/settings.json                # Linux/macOS
+%APPDATA%\mcp\settings.json               # Windows
+```
+
+### **Log Files**
+```
+your-project/mcp_server.log                # Server logs (created automatically)
+```
+
+## 🎯 Quick Commands Reference
+
+### **Setup Commands**
+```bash
+# Initial setup
+python ~/mcp-local-files/launcher.py setup --project .
+
+# Start server
+python ~/mcp-local-files/launcher.py start --project .
+
+# Update configuration only
+python ~/mcp-local-files/launcher.py config --project .
+```
+
+### **Manual Server Commands**
+```bash
+# Basic start
+python ~/mcp-local-files/mcp_server.py --root .
+
+# With custom file size limit (5MB)
+python ~/mcp-local-files/mcp_server.py --root . --max-file-size 5242880
+
+# Serve specific directory
+python ~/mcp-local-files/mcp_server.py --root ./src
+```
+
+### **Debug Commands**
+```bash
+# View live logs
+tail -f mcp_server.log
+
+# Test server response
+echo '{"method": "resources/list", "id": 1}' | python ~/mcp-local-files/mcp_server.py --root .
+
+# Check Python version
+python --version
+
+# Find Python location
+which python
+```
+
+## 🔒 Security & Performance Notes
+
+### **Security**
+- Server only reads files (never writes)
+- Automatically ignores sensitive files (.env, .git, etc.)
+- File size limits prevent reading huge files
+- Only serves text-based source files
+
+### **Performance**
+- Default 1MB file size limit (configurable)
+- Ignores binary files and common build artifacts
+- Scans up to 1000 files by default
+- Add custom ignore patterns for large datasets
+
+### **Customization**
+Edit `mcp_server.py` to customize:
 ```python
+# Add custom ignored patterns
 self.ignored_patterns = [
     '*.pyc', '__pycache__', '.git',
-    # Add your custom patterns here
-    'large_data/*', '*.generated.*'
+    'your_large_folder/*',  # Add custom patterns
+    '*.backup'
 ]
 
+# Add custom file extensions
 self.allowed_extensions = {
-    '.py', '.js', '.ts', '.jsx', '.tsx',
-    # Add your custom extensions here
-    '.custom', '.myext'
+    '.py', '.js', '.ts',
+    '.custom',  # Add your custom extensions
+    '.myformat'
 }
-```
-
-### Environment-Specific Settings
-
-Create environment-specific configuration files:
-
-```bash
-# Development
-python mcp_server.py --root ./src --max-file-size 5242880
-
-# Production (smaller context)
-python mcp_server.py --root ./core --max-file-size 1048576
-```
-
-## Integration with CI/CD
-
-For automated environments, you can run the MCP server as a background service:
-
-```bash
-# Run as background service
-nohup python mcp_server.py --root . > mcp_server.log 2>&1 &
-
-# Or use systemd on Linux
-sudo systemctl start mcp-local-files
 ```
 
 ---
 
-## Support
+## 📞 Getting Help
 
-If you encounter issues:
+If you're still having issues:
 
-1. Check the troubleshooting section above
-2. Review the server logs
-3. Verify your configuration files
-4. Test with a minimal setup first
+1. **Check the logs first:** `tail -f mcp_server.log`
+2. **Verify all paths are absolute and correct**
+3. **Test the server manually before VSCode integration**
+4. **Make sure GitHub Copilot extension is active**
+5. **Try restarting VSCode and the MCP server**
 
-The MCP server provides detailed logging to help diagnose issues. Always check `mcp_server.log` for error messages and debugging information.
+The setup should take about 5-10 minutes once you have Python and VSCode installed. Most issues are related to incorrect file paths or permissions.
